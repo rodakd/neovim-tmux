@@ -27,8 +27,16 @@ require('packer').startup(function(use)
     use 'williamboman/mason.nvim'
     use 'jose-elias-alvarez/null-ls.nvim'
     use 'jay-babu/mason-null-ls.nvim'
+    use "windwp/nvim-ts-autotag"
+    use "ggandor/leap.nvim"
+    use "tpope/vim-repeat"
+    use "nvim-pack/nvim-spectre"
+    use 'nvim-tree/nvim-web-devicons'
+    use 'JoosepAlviste/nvim-ts-context-commentstring'
 end)
 
+require('leap').add_default_mappings()
+require'nvim-web-devicons'.setup()
 require 'nvim-treesitter.configs'.setup {
     ensure_installed = "all",
     sync_install = false,
@@ -36,21 +44,25 @@ require 'nvim-treesitter.configs'.setup {
     highlight = {
         enable = true,
     },
+    autotag = {
+        enable = true
+    },
+    context_commentstring = {
+        enable = true,
+    },
 }
-
 
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 local lspconfig = require('lspconfig')
 local luasnip = require 'luasnip'
 local cmp = require 'cmp'
 
-local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver' } -- 'lua-ls' }
+local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver' }
 for _, lsp in ipairs(servers) do
     lspconfig[lsp].setup {
         capabilities = capabilities,
     }
 end
-
 
 cmp.setup {
     snippet = {
@@ -59,8 +71,8 @@ cmp.setup {
         end,
     },
     mapping = cmp.mapping.preset.insert({
-        ['<C-u>'] = cmp.mapping.scroll_docs(-4), -- Up
-        ['<C-d>'] = cmp.mapping.scroll_docs(4),  -- Down
+        ['<C-u>'] = cmp.mapping.scroll_docs(-4),
+        ['<C-d>'] = cmp.mapping.scroll_docs(4),
         ['<C-Space>'] = cmp.mapping.complete(),
         ['<CR>'] = cmp.mapping.confirm {
             behavior = cmp.ConfirmBehavior.Replace,
@@ -108,29 +120,6 @@ cmp.setup.cmdline(':', {
 })
 
 
-vim.api.nvim_create_autocmd('LspAttach', {
-    group = vim.api.nvim_create_augroup('UserLspConfig', {}),
-    callback = function(ev)
-        -- Enable completion triggered by <c-x><c-o>
-        vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
-
-        -- Buffer local mappings.
-        -- See `:help vim.lsp.*` for documentation on any of the below functions
-        local opts = { buffer = ev.buf }
-        vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
-        vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-        vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-        vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
-        vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, opts)
-        vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
-        vim.keymap.set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, opts)
-        vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-        vim.keymap.set('n', '<space>f', function()
-            vim.lsp.buf.format { async = true }
-        end, opts)
-    end,
-})
-
 local telescopeb = require('telescope.builtin')
 require('telescope').setup{
     defaults = {
@@ -142,6 +131,17 @@ require('telescope').setup{
         },
     },
 }
+
+local actions = require("telescope.actions")
+require("telescope").setup({
+    defaults = {
+        mappings = {
+            i = {
+                ["<esc>"] = actions.close,
+            },
+        },
+    },
+})
 
 require("mason").setup()
 require("mason-null-ls").setup({
@@ -158,8 +158,9 @@ require("null-ls").setup({
 })
 
 -- Defaults
-vim.o.signcolumn = 'no'
-vim.o.laststatus = false
+vim.opt.signcolumn = 'no'
+vim.o.ruler = false
+vim.o.laststatus = 0
 vim.g.mapleader = " "
 vim.opt.nu = true
 vim.opt.relativenumber = true
@@ -175,6 +176,19 @@ vim.opt.scrolloff = 8
 vim.opt.isfname:append("@-@")
 vim.opt.updatetime = 50
 vim.cmd [[autocmd BufWritePre * lua vim.lsp.buf.format()]]
+vim.api.nvim_create_autocmd('LspAttach', {
+    group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+    callback = function(ev)
+        vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+        local opts = { buffer = ev.buf }
+        vim.keymap.set('n', 'gd', telescopeb.lsp_definitions, opts)
+        vim.keymap.set('n', 'gr', telescopeb.lsp_references, opts)
+        vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+        vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
+        vim.keymap.set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, opts)
+        vim.keymap.set({ 'n', 'v' }, 'L', function () vim.diagnostic.open_float(0, {scope="line"}) end, opts)
+    end,
+})
 
 -- Netrw
 vim.g.netrw_banner = 0
@@ -182,22 +196,129 @@ vim.g.netrw_liststyle = 3
 vim.g.netrw_bufsettings = "noma nomod nu nobl nowrap ro"
 
 -- Colorscheme
-vim.cmd("colorscheme tokyonight-moon")
+vim.cmd("colorscheme tokyonight-night")
 vim.cmd("hi NormalNC ctermbg=NONE guibg=NONE")
 vim.cmd("hi Normal ctermbg=NONE guibg=NONE")
 vim.cmd("autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>")
+
+-- Tmux
+vim.cmd('autocmd BufEnter * call system("tmux rename-window " . expand("%"))')
+vim.cmd('autocmd VimLeave * call system("tmux rename-window zsh")')
 
 -- Keymaps
 vim.keymap.set("n", "<C-e>", function() vim.cmd("Ex") end)
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
-vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
-vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
-
 vim.keymap.set('n', '<C-s>', telescopeb.git_status, {})
 vim.keymap.set('n', '<C-p>', telescopeb.git_files, {})
-vim.keymap.set('n', '<C-v>', telescopeb.oldfiles, {})
+vim.keymap.set('n', '<C-k>', telescopeb.oldfiles, {})
 vim.keymap.set('n', '<C-f>', telescopeb.live_grep, {})
 vim.keymap.set('n', '<C-h>', telescopeb.help_tags, {})
+vim.keymap.set('n', '<C-b>', 
+function() 
+    telescopeb.diagnostics {
+        severity = "error"
+    }
+end
+, {})
 vim.keymap.set('n', '<leader>w', vim.cmd.w, {})
+vim.keymap.set("n", "<leader>s", telescopeb.git_stash, {})
+vim.keymap.set("n", "<leader>p", '"+p')
+vim.keymap.set("v", "<leader>y", '"+y')
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+vim.keymap.set('n', '<leader>S', '<cmd>lua require("spectre").open()<CR>', {
+    desc = "Open Spectre"
+})
+
+-- Filter diagnostics
+local ignore = {
+    ["Pyright"] = {
+        '^".+" is unknown import symbol$',
+    }
+}
+
+function filter(arr, func)
+	local new_index = 1
+	local size_orig = #arr
+	for old_index, v in ipairs(arr) do
+		if func(v, old_index) then
+			arr[new_index] = v
+			new_index = new_index + 1
+		end
+	end
+	for i = new_index, size_orig do arr[i] = nil end
+end
+
+function filter_diagnostics(diagnostic)
+    for source, messages in pairs(ignore) do
+        if source == diagnostic.source then
+            for i, message in ipairs(messages) do
+                if string.match(diagnostic.message, message) then
+                    return false     
+                end
+            end
+        end
+    end
+	return true
+end
+
+function custom_on_publish_diagnostics(a, params, client_id, c, config)
+	filter(params.diagnostics, filter_diagnostics)
+	vim.lsp.diagnostic.on_publish_diagnostics(a, params, client_id, c, config)
+end
+
+vim.lsp.handlers["textDocument/publishDiagnostics"] = vim.lsp.with(
+	custom_on_publish_diagnostics, {
+        update_in_insert = true,
+        underline = false
+    })
+
+-- Snippets
+-- You can check file type with 
+-- print(vim.inspect(require("luasnip").get_snippet_filetypes()))`) 
+local ls = require("luasnip")
+local s = ls.snippet
+local sn = ls.snippet_node
+local t = ls.text_node
+local i = ls.insert_node
+local f = ls.function_node
+local c = ls.choice_node
+local d = ls.dynamic_node
+local r = ls.restore_node
+
+local function copy(args)
+	return args[1]
+end
+
+ls.add_snippets("all", {}, { key = "all" })
+
+ls.add_snippets("python", {
+	s("def", {
+		t("def "),
+		i(1, "name"),
+		t("("),
+		i(2, "args"),
+		t({ "):", "\t" }),
+		i(3, "pass"),
+	}),
+}, {
+    key = "python"
+})
+
+ls.add_snippets("typescriptreact", {
+	s("rfc", {
+		t("type "),
+        f(copy, 1),
+        t({"Props = {}","", "export function "}),
+        i(1, "Component"),
+        t("({}: "),
+        f(copy, 1),
+        t({"Props) {", "\t"}),
+        i(2, "return"),
+        t({ "", "}", ""}),
+	}),
+}, {
+    key = "typescriptreact"
+})
 
