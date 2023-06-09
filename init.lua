@@ -16,7 +16,7 @@ require("packer").startup(function(use)
 		"nvim-treesitter/nvim-treesitter",
 		run = ":TSUpdate",
 	})
-	use("nvim-telescope/telescope.nvim")
+	use({ "nvim-telescope/telescope.nvim", commit = "42267407ae588fd6c07238777d48869571193a49" })
 	use({
 		"ahmedkhalf/project.nvim",
 		config = function()
@@ -29,7 +29,6 @@ require("packer").startup(function(use)
 	use("jose-elias-alvarez/null-ls.nvim")
 	use("jay-babu/mason-null-ls.nvim")
 	use("windwp/nvim-ts-autotag")
-	use("ggandor/leap.nvim")
 	use("tpope/vim-repeat")
 	use("nvim-pack/nvim-spectre")
 	use("nvim-tree/nvim-web-devicons")
@@ -37,12 +36,12 @@ require("packer").startup(function(use)
 	use("brenoprata10/nvim-highlight-colors")
 	use("windwp/nvim-autopairs")
 	use("tpope/vim-surround")
+	use("mbbill/undotree")
 end)
 
 require("nvim-autopairs").setup({
 	disable_filetype = { "TelescopePrompt", "vim" },
 })
-require("leap").add_default_mappings()
 require("nvim-web-devicons").setup()
 require("nvim-treesitter.configs").setup({
 	ensure_installed = "all",
@@ -195,11 +194,6 @@ vim.o.laststatus = 0
 vim.g.mapleader = " "
 vim.opt.nu = true
 vim.opt.relativenumber = true
-vim.opt.tabstop = 4
-vim.opt.softtabstop = 4
-vim.opt.shiftwidth = 4
-vim.opt.expandtab = true
-vim.opt.smartindent = true
 vim.opt.hlsearch = false
 vim.opt.incsearch = true
 vim.opt.termguicolors = true
@@ -222,6 +216,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end, opts)
 	end,
 })
+
+-- Intendation
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.expandtab = true
+-- vim.opt.autoindent = true
+-- vim.opt.smartindent = true
 
 -- Netrw
 vim.g.netrw_bufsettings = "noma nomod nu nobl nowrap ro"
@@ -254,6 +256,13 @@ vim.keymap.set("n", "<C-b>", function()
 		severity = "error",
 	})
 end, {})
+vim.keymap.set("n", "<C-g>", function()
+	vim.cmd("G")
+end)
+vim.keymap.set("n", "<C-t>", function()
+	vim.cmd("UndotreeToggle")
+	vim.cmd("UndotreeFocus")
+end)
 vim.keymap.set("n", "<leader>w", vim.cmd.w, {})
 vim.keymap.set("n", "<leader>p", '"+p')
 vim.keymap.set("v", "<leader>y", '"+y')
@@ -360,3 +369,18 @@ ls.add_snippets("typescriptreact", {
 }, {
 	key = "typescriptreact",
 })
+
+vim.cmd([[
+if has("persistent_undo")
+   let target_path = expand('~/.undodir')
+
+    " create the directory and any parent directories
+    " if the location does not exist.
+    if !isdirectory(target_path)
+        call mkdir(target_path, "p", 0700)
+    endif
+
+    let &undodir=target_path
+    set undofile
+endif
+]])
