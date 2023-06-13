@@ -1,4 +1,4 @@
--- Plugins
+-- Plugin
 require("packer").startup(function(use)
 	use("wbthomason/packer.nvim")
 	use("folke/tokyonight.nvim")
@@ -37,11 +37,14 @@ require("packer").startup(function(use)
 	use("windwp/nvim-autopairs")
 	use("tpope/vim-surround")
 	use("mbbill/undotree")
+	use("maxmellon/vim-jsx-pretty")
+	use("nvim-treesitter/nvim-treesitter-context")
 end)
 
 require("nvim-autopairs").setup({
 	disable_filetype = { "TelescopePrompt", "vim" },
 })
+require("treesitter-context").setup()
 require("nvim-web-devicons").setup()
 require("nvim-treesitter.configs").setup({
 	ensure_installed = "all",
@@ -187,6 +190,21 @@ require("null-ls").setup({
 	end,
 })
 
+vim.cmd([[
+if has("persistent_undo")
+   let target_path = expand('~/.undodir')
+
+    " create the directory and any parent directories
+    " if the location does not exist.
+    if !isdirectory(target_path)
+        call mkdir(target_path, "p", 0700)
+    endif
+
+    let &undodir=target_path
+    set undofile
+endif
+]])
+
 -- Defaults
 vim.opt.signcolumn = "no"
 vim.o.ruler = false
@@ -206,8 +224,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(ev)
 		vim.bo[ev.buf].omnifunc = "v:lua.vim.lsp.omnifunc"
 		local opts = { buffer = ev.buf }
+		vim.keymap.set("n", "gr", function()
+			telescopeb.lsp_references({ trim_text = true, show_line = false })
+		end, opts)
 		vim.keymap.set("n", "gd", telescopeb.lsp_definitions, opts)
-		vim.keymap.set("n", "gr", telescopeb.lsp_references, opts)
 		vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
 		vim.keymap.set("n", "<space>rn", vim.lsp.buf.rename, opts)
 		vim.keymap.set({ "n", "v" }, "<space>ca", vim.lsp.buf.code_action, opts)
@@ -217,13 +237,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 
--- Intendation
+-- Indentation
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
--- vim.opt.autoindent = true
--- vim.opt.smartindent = true
+vim.opt.smartindent = true
+vim.opt.autoindent = true
 
 -- Netrw
 vim.g.netrw_bufsettings = "noma nomod nu nobl nowrap ro"
@@ -240,7 +260,6 @@ vim.cmd("hi CursorLineNr guifg='#72b3b5'")
 -- Tmux
 vim.cmd('autocmd BufEnter * call system("tmux rename-window " . expand("%"))')
 vim.cmd('autocmd VimLeave * call system("tmux rename-window zsh")')
-vim.cmd("nnoremap <C-i> :b# <CR>")
 
 -- Keymaps
 vim.keymap.set("n", "<C-e>", function()
@@ -268,6 +287,8 @@ vim.keymap.set("n", "<leader>p", '"+p')
 vim.keymap.set("v", "<leader>y", '"+y')
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+vim.cmd("nnoremap <C-i> :b# <CR>")
+vim.cmd("nnoremap <C-l> <C-o>")
 
 -- Filter diagnostics
 local ignore = {
@@ -343,11 +364,9 @@ ls.add_snippets("python", {
 
 ls.add_snippets("typescript", {
 	s("cl", {
-		t('console.log("'),
+		t({ "console.log(`", "\t", "" }),
 		i(1),
-		t('",'),
-		i(2),
-		t(")"),
+		t({ "", "", "`)" }),
 	}),
 }, {
 	key = "typescript",
@@ -369,18 +388,3 @@ ls.add_snippets("typescriptreact", {
 }, {
 	key = "typescriptreact",
 })
-
-vim.cmd([[
-if has("persistent_undo")
-   let target_path = expand('~/.undodir')
-
-    " create the directory and any parent directories
-    " if the location does not exist.
-    if !isdirectory(target_path)
-        call mkdir(target_path, "p", 0700)
-    endif
-
-    let &undodir=target_path
-    set undofile
-endif
-]])
