@@ -234,6 +234,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		vim.keymap.set({ "n", "v" }, "L", function()
 			vim.diagnostic.open_float(0, { scope = "line" })
 		end, opts)
+		vim.keymap.set("n", "<C-b>", function()
+			telescopeb.diagnostics({
+				severity = "error",
+			})
+		end, {})
+		vim.keymap.set("n", "<C-m>", function()
+			vim.diagnostic.goto_next({ float = false })
+		end, {})
 	end,
 })
 
@@ -247,6 +255,7 @@ vim.opt.autoindent = true
 
 -- Netrw
 vim.g.netrw_bufsettings = "noma nomod nu nobl nowrap ro"
+vim.g.netrw_keepdir = 0
 
 -- Colorscheme
 vim.cmd("colorscheme tokyonight-night")
@@ -270,11 +279,6 @@ vim.keymap.set("n", "<C-p>", telescopeb.git_files, {})
 vim.keymap.set("n", "<C-o>", telescopeb.oldfiles, {})
 vim.keymap.set("n", "<C-f>", telescopeb.live_grep, {})
 vim.keymap.set("n", "<C-h>", telescopeb.help_tags, {})
-vim.keymap.set("n", "<C-b>", function()
-	telescopeb.diagnostics({
-		severity = "error",
-	})
-end, {})
 vim.keymap.set("n", "<C-g>", function()
 	vim.cmd("G")
 end)
