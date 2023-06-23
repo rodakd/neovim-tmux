@@ -265,6 +265,7 @@ vim.cmd("autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>")
 vim.cmd("hi CursorLine guibg='#444444'")
 vim.cmd("hi LineNr guifg='#888888'")
 vim.cmd("hi CursorLineNr guifg='#72b3b5'")
+vim.cmd("hi TelescopeNormal cterm=NONE guibg=NONE")
 
 -- Tmux
 vim.cmd('autocmd BufEnter * call system("tmux rename-window " . expand("%"))')
